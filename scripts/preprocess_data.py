@@ -70,9 +70,9 @@ if __name__ == "__main__":
     IMG_HEIGHT = 16
     
     # Define final and temporary directories
-    FINAL_HF_DIR = "/data2/home/vcivale/GenomicVision/data/interim"
-    TEMP_PT_DIR = "/data2/home/vcivale/GenomicVision/data/temp" 
-    CLEANUP_TEMP_FILES = True 
+    FINAL_HF_DIR = "/home/vcivale/GenomicVision/data/interim"
+    TEMP_PT_DIR = "/home/vcivale/GenomicVision/data/temp"
+    CLEANUP_TEMP_FILES = True
 
     raw_dataset = load_hf_dataset(HF_DATASET_NAME)
 
