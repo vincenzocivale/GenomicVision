@@ -9,7 +9,8 @@ dependencies = [
     "accelerate",
     "evaluate",
     "scikit-learn",
-    "datasets"
+    "datasets",
+    "torchvision"
 ]
 
 [tool.setuptools]
