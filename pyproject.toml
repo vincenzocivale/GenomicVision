@@ -2,9 +2,6 @@
 name = "genomic_vision"
 version = "0.1.0"
 
-[tool.setuptools]
-packages = ["src"]
-
 dependencies = [
     "torch",
     "numpy",
@@ -14,3 +11,6 @@ dependencies = [
     "scikit-learn",
     "datasets"
 ]
+
+[tool.setuptools]
+packages = ["src"]
