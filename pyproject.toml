@@ -10,7 +10,9 @@ dependencies = [
     "evaluate",
     "scikit-learn",
     "datasets",
-    "torchvision"
+    "torchvision",
+    "seaborn",
+    "wandb"
 ]
 
 [tool.setuptools]

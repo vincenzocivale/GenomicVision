@@ -2,3 +2,6 @@
 /data/
 __pycache__/
 genomic_vision.egg-info/
+wandb/
+*.out
+*.log

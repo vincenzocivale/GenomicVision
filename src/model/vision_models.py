@@ -20,7 +20,7 @@ class VisionModelType(Enum):
     CUSTOM_CNN = "custom_cnn"
 
 
-class BaseVisionModel(ABC):
+class BaseVisionModel(nn.Module, ABC):
     """Classe base astratta per tutti i modelli di visione."""
     
     def __init__(
@@ -37,15 +37,30 @@ class BaseVisionModel(ABC):
             pretrained: Se usare pesi pre-addestrati (dove disponibile)
             freeze_backbone: Se congelare i pesi del backbone
         """
+        super().__init__()
         self.num_classes = num_classes
         self.input_channels = input_channels
         self.pretrained = pretrained
         self.freeze_backbone = freeze_backbone
+        self.model = None
         
     @abstractmethod
     def build(self) -> nn.Module:
         """Costruisce e restituisce il modello PyTorch."""
         pass
+    
+    def forward(self, pixel_values, labels=None):
+        """Forward pass compatibile con HF Trainer."""
+        if self.model is None:
+            raise RuntimeError("Model not built. Call build() first.")
+        
+        logits = self.model(pixel_values)
+        
+        loss = None
+        if labels is not None:
+            loss = nn.CrossEntropyLoss()(logits, labels)
+        
+        return {'loss': loss, 'logits': logits}
     
     def _adapt_first_conv(self, model: nn.Module, first_conv_name: str) -> nn.Module:
         """
@@ -105,25 +120,25 @@ class ResNetModel(BaseVisionModel):
     def build(self) -> nn.Module:
         # Seleziona la variante
         if self.variant == "resnet18":
-            model = models.resnet18(weights="DEFAULT" if self.pretrained else None)
+            self.model = models.resnet18(weights="DEFAULT" if self.pretrained else None)
         elif self.variant == "resnet34":
-            model = models.resnet34(weights="DEFAULT" if self.pretrained else None)
+            self.model = models.resnet34(weights="DEFAULT" if self.pretrained else None)
         elif self.variant == "resnet50":
-            model = models.resnet50(weights="DEFAULT" if self.pretrained else None)
+            self.model = models.resnet50(weights="DEFAULT" if self.pretrained else None)
         else:
             raise ValueError(f"Variante ResNet non supportata: {self.variant}")
         
         # Adatta primo conv layer
-        model = self._adapt_first_conv(model, "conv1")
+        self.model = self._adapt_first_conv(self.model, "conv1")
         
         # Modifica classificatore finale
-        num_features = model.fc.in_features
-        model.fc = nn.Linear(num_features, self.num_classes)
+        num_features = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_features, self.num_classes)
         
         # Congela backbone se richiesto
-        model = self._freeze_layers(model, "fc")
+        self.model = self._freeze_layers(self.model, "fc")
         
-        return model
+        return self
 
 
 class EfficientNetModel(BaseVisionModel):
@@ -135,39 +150,39 @@ class EfficientNetModel(BaseVisionModel):
         
     def build(self) -> nn.Module:
         if self.variant == "b0":
-            model = models.efficientnet_b0(weights="DEFAULT" if self.pretrained else None)
+            self.model = models.efficientnet_b0(weights="DEFAULT" if self.pretrained else None)
         elif self.variant == "b1":
-            model = models.efficientnet_b1(weights="DEFAULT" if self.pretrained else None)
+            self.model = models.efficientnet_b1(weights="DEFAULT" if self.pretrained else None)
         else:
             raise ValueError(f"Variante EfficientNet non supportata: {self.variant}")
         
         # Adatta primo conv layer
-        model = self._adapt_first_conv(model, "features.0.0")
+        self.model = self._adapt_first_conv(self.model, "features.0.0")
         
         # Modifica classificatore
-        num_features = model.classifier[1].in_features
-        model.classifier[1] = nn.Linear(num_features, self.num_classes)
+        num_features = self.model.classifier[1].in_features
+        self.model.classifier[1] = nn.Linear(num_features, self.num_classes)
         
-        model = self._freeze_layers(model, "classifier")
+        self.model = self._freeze_layers(self.model, "classifier")
         
-        return model
+        return self
 
 
 class ViTModel(BaseVisionModel):
     """Wrapper per Vision Transformer."""
     
     def build(self) -> nn.Module:
-        model = models.vit_b_16(weights="DEFAULT" if self.pretrained else None)
+        self.model = models.vit_b_16(weights="DEFAULT" if self.pretrained else None)
         
         # Adatta patch embedding per 4 canali
-        model = self._adapt_first_conv(model, "conv_proj")
+        self.model = self._adapt_first_conv(self.model, "conv_proj")
         
         # Modifica head
-        model.heads.head = nn.Linear(model.heads.head.in_features, self.num_classes)
+        self.model.heads.head = nn.Linear(self.model.heads.head.in_features, self.num_classes)
         
-        model = self._freeze_layers(model, "heads")
+        self.model = self._freeze_layers(self.model, "heads")
         
-        return model
+        return self
 
 
 class MobileNetModel(BaseVisionModel):
@@ -351,5 +366,3 @@ class VisionModelFactory:
             },
         }
         return info.get(model_type, {"parameters": "N/A", "description": "N/A"})
-
-
