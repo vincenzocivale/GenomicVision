@@ -64,10 +64,9 @@ def main():
     print("Caricamento dataset...")
     dataset = load_from_disk(DATASET_PATH)
 
-    
-    # Split validation dal train (10%)
+    # Split validation dal train (20%)
     if 'validation' not in dataset.keys():
-        train_val = dataset['train'].train_test_split(test_size=0.1, seed=42)
+        train_val = dataset['train'].train_test_split(test_size=0.2, seed=42)
         dataset['train'] = train_val['train']
         dataset['validation'] = train_val['test']
 
