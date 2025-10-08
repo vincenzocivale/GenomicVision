@@ -23,9 +23,9 @@ BASE_CONFIG = {
     "label_col": "label",
     "image_size": 16,
     "training": {
-        "output_dir": "./results",
-        "epochs": 50,
-        "batch_size": 1024,
+        "output_dir": "/equilibrium/datasets/TCGA-histological-data/genomic_vision/results/",
+        "epochs": 30,
+        "batch_size": 256,
         "learning_rate": 0.005,
         "weight_decay": 0.01,
         "load_best_model_at_end": True,
@@ -75,6 +75,8 @@ def run_single_experiment(config, model_name, dataset_name, pil_dataset):
         return examples
 
     processed_datasets = pil_dataset.map(transform, batched=True, remove_columns=['image'])
+
+    processed_datasets.set_format(type='torch', columns=['pixel_values', 'label'])
     
     labels = sorted(set(processed_datasets['train']['label']))
     
